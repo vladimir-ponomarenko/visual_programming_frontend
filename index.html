@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link rel="stylesheet" as="style" onload="this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&family=Work+Sans%3Awght%40400%3B500%3B700%3B900" />
+    <title>Network Data Explorer</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button {
+            transition: border-color 0.3s, transform 0.2s;
+        }
+        .tab-button:hover {
+            border-color: #2094f3;
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+        .button {
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .button:hover {
+            background-color: #1a74d5;
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+        .nav-link {
+            transition: transform 0.2s;
+        }
+        .nav-link:hover {
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+        .logo {
+            height: 55px;
+        }
+    </style>
+</head>
+<body class="bg-[#101a23] text-white font-sans">
+    <header class="flex items-center justify-between border-b border-[#223749] px-10 py-3">
+        <img src="png/SibSutisLogo.jpg" alt="Logo" class="logo" />
+        <nav class="flex space-x-4">
+            <button id="authorTab" class="tab-button text-white">Author</button>
+            <button id="aboutTab" class="tab-button text-white">About</button>
+        </nav>
+    </header>
+
+    <div class="px-40 py-5">
+        <h1 class="text-2xl font-bold">Network Data</h1>
+        <p class="text-[#90b0cb]">GSM, WCDMA, LTE, and NR network parameters</p>
+
+        <div class="flex border-b border-[#314f68] my-4">
+            <button id="gsmTab" class="tab-button px-4 py-2 border-b-2 border-[#2094f3]">GSM</button>
+            <button id="wcdmaTab" class="tab-button px-4 py-2 border-b-2 border-transparent">WCDMA</button>
+            <button id="lteTab" class="tab-button px-4 py-2 border-b-2 border-transparent">LTE</button>
+            <button id="nrTab" class="tab-button px-4 py-2 border-b-2 border-transparent">NR</button>
+        </div>
+
+        <div id="gsm" class="tab-content active"></div>
+        <div id="wcdma" class="tab-content"></div>
+        <div id="lte" class="tab-content"></div>
+        <div id="nr" class="tab-content"></div>
+
+        <div id="author" class="tab-content"></div>
+        <div id="about" class="tab-content"></div>
+
+        <div class="flex justify-end">
+            <button id="getData" class="button mt-4 px-4 py-2 bg-[#2094f3] text-white rounded">Get Data</button>
+        </div>
+    </div>
+
+    <script>
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('border-[#2094f3]');
+                    t.classList.add('border-transparent');
+                });
+                tabContents.forEach(tc => tc.classList.remove('active'));
+
+                tab.classList.remove('border-transparent');
+                tab.classList.add('border-[#2094f3]');
+                const tabContentId = tab.id.replace('Tab', '');
+                document.getElementById(tabContentId).classList.add('active');
+                
+                if (tabContentId === 'author') {
+                    document.getElementById('author').innerHTML = `
+                        <h2 class="text-xl font-bold">Author Information</h2>
+                        <p class="text-[#90b0cb]">This project was created by Vladimir Ponomarenko.</p>
+                        <p class="text-[#90b0cb]">Group: IA-231</p>
+                    `;
+                } else if (tabContentId === 'about') {
+                    document.getElementById('about').innerHTML = `
+                        <h2 class="text-xl font-bold">About This Project</h2>
+                        <p class="text-[#90b0cb]">This web application is a coursework on the subject of visual programming.</p>
+                    `;
+                }
+            });
+        });
+
+        function createTable(data, networkType) {
+            if (!data || data.length === 0) {
+                return `<p>No ${networkType} data available.</p>`;
+            }
+
+            const keys = Object.keys(data[0]);
+            let tableHTML = "<table class='min-w-full bg-[#182834] border border-[#314f68]'><thead><tr>";
+            keys.forEach(key => tableHTML += `<th class='text-left text-white px-4 py-2'>${key}</th>`);
+            tableHTML += "</tr></thead><tbody>";
+            data.forEach(item => {
+                tableHTML += "<tr class='border-t border-[#314f68]'>";
+                keys.forEach(key => {
+                    tableHTML += `<td class='text-[#90b0cb] px-4 py-2'>${item[key] !== null && item[key] !== undefined ? item[key] : ""}</td>`;
+                });
+                tableHTML += "</tr>";
+            });
+            tableHTML += "</tbody></table>";
+            return tableHTML;
+        }
+
+        document.getElementById('getData').addEventListener('click', () => {
+            fetch('http://localhost:8080/data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('gsm').innerHTML = createTable(data.flatMap(item => item.gsm || []), "GSM");
+                    document.getElementById('wcdma').innerHTML = createTable(data.flatMap(item => item.wcdma || []), "WCDMA");
+                    document.getElementById('lte').innerHTML = createTable(data.flatMap(item => item.lte || []), "LTE");
+                    document.getElementById('nr').innerHTML = createTable(data.flatMap(item => item.nr || []), "NR");
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById("gsm").innerHTML = 'Error GSM';
+                    document.getElementById("wcdma").innerHTML = 'Error WCDMA';
+                    document.getElementById("lte").innerHTML = 'Error LTE';
+                    document.getElementById("nr").innerHTML = 'Error NR';
+                });
+        });
+    </script>
+</body>
+</html>
